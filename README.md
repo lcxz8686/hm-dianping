@@ -1,14 +1,18 @@
 # Redis黑马视频教程项目
 
-#### 介绍
-基于Springboot框架，针对Redis的各种策略模式。实现了短信登入、商户查询缓存、优惠券秒杀、达人探店、好友关注、附近商户、用户签到、UV统计功能。
+## 介绍
+本章节是基于黑马程序员视频课程的学习笔记，其中涵盖项目实现、流程分析、各个方法的介绍、最后会带上完整的代码实现（gitee获取）！本章节会持续更新，于今日2022-6-28开始...
+
+
+## 博客地址
+本人的博客路径(含代码解析)：https://blog.csdn.net/weixin_43715214/article/details/125505311 
+BiliBili视频的路径：https://www.bilibili.com/video/BV1cr4y1671t
+
 
 #### 软件架构
-软件架构说明
 
+## 仓库结构
 本文完全依照黑马程序员课程目录，依次用Redis实现：
-
-
 1. Redis基础知识&&数据结构
 1. 短信登入
 1. 商户查询缓存
@@ -18,6 +22,8 @@
 1. 附近商户
 1. 用户签到
 1. UV统计
+
+
 
 
 
@@ -45,11 +51,3 @@
 4.  新建 Pull Request
 
 
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
