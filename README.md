@@ -13,7 +13,7 @@ BiliBili视频的路径：https://www.bilibili.com/video/BV1cr4y1671t
 
 ## 仓库结构
 本文完全依照黑马程序员课程目录，依次用Redis实现：
-![黑马程序员课程目录](imagesimage.png)
+![黑马程序员课程目录](images/image.png)
 1. Redis基础知识&&数据结构
 1. 短信登入
 1. 商户查询缓存
