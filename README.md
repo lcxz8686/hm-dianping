@@ -1,14 +1,19 @@
 # Redis黑马视频教程项目
 
 ## 介绍
-本章节是基于黑马程序员视频课程的学习笔记，其中涵盖项目实现、流程分析、各个方法的介绍、最后会带上完整的代码实现！本章节会持续更新，于今日2022-6-28开始...
-
-
+本项目是根据黑马程序员的BiliBili视频课进行编写的！完全按照视频的顺序进行编写，主要是基于SpringBoot项目的Redis解决策略，大致涉及到Redis缓存穿透、雪崩、击穿等问题；Redis分布式锁、Redis消息队列、分布式缓存、多级缓存、Redis底层原理。
 
 ## 博客地址
-本人的博客路径(含代码解析)：https://blog.csdn.net/weixin_43715214/article/details/125505311
+本人的博客路径(含代码解析)免费！： **https://blog.csdn.net/weixin_43715214/article/details/125505311** 
 
 BiliBili视频的路径：https://www.bilibili.com/video/BV1cr4y1671t
+
+## 项目部署
+1. 这里是列表文本先将nginx-1.80-zip解压，静态页面资源都在里面了，双击nginx.exe文件（弹出一个小黑框（闪一下））代表静态资源启动成功；
+
+2. 使用navicat运行hmdq.sql
+
+3. 部署Redis，修改application.yml里面的mysql地址、redis地址。
 
 ## 软件架构
 使用Spring、SpringMVC、MyBatis框架，基于SpringBoot快速构建。
