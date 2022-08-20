@@ -58,7 +58,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
      * 释放锁
      * @param key
      */
-    private void unlock(String key) {
+    private void unLock(String key) {
         stringRedisTemplate.delete(key);
     }
 
@@ -171,7 +171,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             throw new RuntimeException(ex);
         } finally {
             // 7.释放锁
-            unlock(lockKey);
+            unLock(lockKey);
         }
 
         // 8.返回
@@ -180,6 +180,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     /**
      * 逻辑过期解决缓存击穿问题 queryWithLogicalExpire()
+     * 测试前要先缓存预热一下！不然 data 与 expireTime 的缓存值是null！
      * @param id
      * @return
      */
@@ -194,6 +195,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         }
 
         // 4.命中，需要将json反序列化为对象
+        // redisData没有数据
         RedisData redisData = JSONUtil.toBean(shopJson, RedisData.class);
         Shop shop = JSONUtil.toBean((JSONObject) redisData.getData(), Shop.class);
         LocalDateTime expireTime = redisData.getExpireTime();
@@ -214,24 +216,33 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             // 6.3.成功，开启独立线程，实现缓存重建
             CACHE_REBUILD_EXECUTOR.submit( () -> {
                 try {
-                    // 1.查询店铺数据
-                    Shop shopTemp = getById(id);
-                    // 2.封装逻辑过期时间
-                    RedisData redisDataTemp = new RedisData();
-                    redisDataTemp.setData(shopTemp);
-                    // 假设过期的秒数为 20s
-                    redisDataTemp.setExpireTime(LocalDateTime.now().plusSeconds(20L));
-                    // 3.写入redis
-                    stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(redisDataTemp));
+                    // 重建缓存，过期时间为20L
+                    saveShopRedis(id,20L);
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 } finally {
-                    unlock(lockKey);
+                    unLock(lockKey);
                 }
             });
         }
         // 6.4.返回过期店铺信息
         return shop;
+    }
+
+    /**
+     * 重建缓存,先缓存预热一下，否则queryWithLogicalExpire() 的expire为null
+     * @param id
+     * @param expireSeconds
+     */
+    public void saveShopRedis(Long id, Long expireSeconds) {
+        // 1.查询店铺数据
+        Shop shop = getById(id);
+        // 2.封装逻辑过期时间
+        RedisData redisData = new RedisData();
+        redisData.setData(shop);
+        redisData.setExpireTime(LocalDateTime.now().plusSeconds(expireSeconds));  // 过期时间
+        // 3.写入redis
+        stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(redisData));
     }
 
 
