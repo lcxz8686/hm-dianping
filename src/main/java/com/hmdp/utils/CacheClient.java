@@ -17,12 +17,20 @@ import java.util.function.Function;
 import static com.hmdp.utils.RedisConstants.CACHE_NULL_TTL;
 import static com.hmdp.utils.RedisConstants.LOCK_SHOP_KEY;
 
+/**
+ * 1. 将任意的Java对象序列化为json并储存在string类型的key中，并且可以设置TTL过期时间。
+ * 2. 将任意的Java对象序列化为json并储存在string类型的key中，并且可以设置逻辑过期时间，用于缓存击穿。
+ * 3. 根据指定的key查询缓存，并反序列化为指定类型，利用缓存空值的方式解决缓存穿透。
+ * 4. 根据指定的key查询缓存，并反序列化为指定类型，利用逻辑过期解决缓存击穿。
+ */
+
 @Slf4j
 @Component
 public class CacheClient {
     private final StringRedisTemplate stringRedisTemplate;
     private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
+    // stringRedisTemplate 构造函数注入
     public CacheClient(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
     }
