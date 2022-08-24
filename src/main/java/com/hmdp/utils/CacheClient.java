@@ -28,28 +28,36 @@ import static com.hmdp.utils.RedisConstants.LOCK_SHOP_KEY;
 @Component
 public class CacheClient {
     private final StringRedisTemplate stringRedisTemplate;
-    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
-    // stringRedisTemplate 构造函数注入
+    // stringRedisTemplate 构造函数注入 ！
     public CacheClient(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
+    // 存入redis的ket-value，并设计过期时间
     public void set(String key, Object value, Long time, TimeUnit unit) {
+        // stringRedisTemplate要求是string类型，value直接拿下来是一个object
+        // 使用 JSONUtil将 object 序列化为 string
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
     }
 
+    // 逻辑过期
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {
         // 设置逻辑过期
         RedisData redisData = new RedisData();
         redisData.setData(value);
+        // LocalDateTime.now() 获取当前时间
+        // plusSeconds 添加秒数
+        // 使用TimeUnit包的 toSeconds将时间转换为秒数
         redisData.setExpireTime(LocalDateTime.now().plusSeconds(unit.toSeconds(time)));
         // 写入Redis
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
 
+    // 缓存穿透
     public <R,ID> R queryWithPassThrough(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit){
+        // keyPrefix Key的前缀
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         String json = stringRedisTemplate.opsForValue().get(key);
@@ -65,6 +73,7 @@ public class CacheClient {
         }
 
         // 4.不存在，根据id查询数据库
+        // Function<ID, R> dbFallback : ID是参数、R是返回值。
         R r = dbFallback.apply(id);
         // 5.不存在，返回错误
         if (r == null) {
@@ -78,6 +87,9 @@ public class CacheClient {
         return r;
     }
 
+    // 定义线程池
+    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+    // 逻辑过期
     public <R, ID> R queryWithLogicalExpire(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
