@@ -57,6 +57,7 @@ public class CacheClient {
     // 缓存穿透
     public <R,ID> R queryWithPassThrough(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit){
+        // Java 8 定义了 Function 接口，apply()可以接受一个泛型 T 对象，返回一个泛型 R 对象
         // keyPrefix Key的前缀
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
@@ -71,8 +72,9 @@ public class CacheClient {
             // 返回一个错误信息
             return null;
         }
-
         // 4.不存在，根据id查询数据库
+        // Shop shop = getById(id); 但是需要使用到缓存穿透的场景有很多，可能是查shop，可能是user
+        // 所以执行的orm是不一样的！
         // Function<ID, R> dbFallback : ID是参数、R是返回值。
         R r = dbFallback.apply(id);
         // 5.不存在，返回错误
