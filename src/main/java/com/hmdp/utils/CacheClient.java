@@ -17,31 +17,48 @@ import java.util.function.Function;
 import static com.hmdp.utils.RedisConstants.CACHE_NULL_TTL;
 import static com.hmdp.utils.RedisConstants.LOCK_SHOP_KEY;
 
+/**
+ * 1. 将任意的Java对象序列化为json并储存在string类型的key中，并且可以设置TTL过期时间。
+ * 2. 将任意的Java对象序列化为json并储存在string类型的key中，并且可以设置逻辑过期时间，用于缓存击穿。
+ * 3. 根据指定的key查询缓存，并反序列化为指定类型，利用缓存空值的方式解决缓存穿透。
+ * 4. 根据指定的key查询缓存，并反序列化为指定类型，利用逻辑过期解决缓存击穿。
+ */
+
 @Slf4j
 @Component
 public class CacheClient {
     private final StringRedisTemplate stringRedisTemplate;
-    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
 
+    // stringRedisTemplate 构造函数注入 ！
     public CacheClient(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
+    // 存入redis的ket-value，并设计过期时间
     public void set(String key, Object value, Long time, TimeUnit unit) {
+        // stringRedisTemplate要求是string类型，value直接拿下来是一个object
+        // 使用 JSONUtil将 object 序列化为 string
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
     }
 
+    // 逻辑过期
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {
         // 设置逻辑过期
         RedisData redisData = new RedisData();
         redisData.setData(value);
+        // LocalDateTime.now() 获取当前时间
+        // plusSeconds 添加秒数
+        // 使用TimeUnit包的 toSeconds将时间转换为秒数
         redisData.setExpireTime(LocalDateTime.now().plusSeconds(unit.toSeconds(time)));
         // 写入Redis
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
 
+    // 缓存穿透
     public <R,ID> R queryWithPassThrough(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit){
+        // Java 8 定义了 Function 接口，apply()可以接受一个泛型 T 对象，返回一个泛型 R 对象
+        // keyPrefix Key的前缀
         String key = keyPrefix + id;
         // 1.从redis查询商铺缓存
         String json = stringRedisTemplate.opsForValue().get(key);
@@ -55,8 +72,10 @@ public class CacheClient {
             // 返回一个错误信息
             return null;
         }
-
         // 4.不存在，根据id查询数据库
+        // Shop shop = getById(id); 但是需要使用到缓存穿透的场景有很多，可能是查shop，可能是user
+        // 所以执行的orm是不一样的！
+        // Function<ID, R> dbFallback : ID是参数、R是返回值。
         R r = dbFallback.apply(id);
         // 5.不存在，返回错误
         if (r == null) {
@@ -70,6 +89,9 @@ public class CacheClient {
         return r;
     }
 
+    // 定义线程池
+    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+    // 逻辑过期
     public <R, ID> R queryWithLogicalExpire(
             String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         String key = keyPrefix + id;
