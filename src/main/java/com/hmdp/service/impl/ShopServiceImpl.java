@@ -28,7 +28,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Resource
     private CacheClient cacheClient;
 
-
     @Override
     public Result queryById(Long id) {
 

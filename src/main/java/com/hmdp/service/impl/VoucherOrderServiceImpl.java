@@ -52,7 +52,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
 
         Long userId = UserHolder.getUser().getId();
+        // 如果字符常量池中已经包含一个等于此String对象的字符串,则返回常量池中字符串的引用
+        // 对于任意两个字符串 s 和 t，当且仅当 s.equals(t) 为 true 时，s.intern() == t.intern() 才为 true
         synchronized (userId.toString().intern()) {
+            // 在Spring中，事务的实现方式是对当前类做了动态代理！用其代理对象去做事务处理！
+            // 所以我们要获取当前类的代理对象！否则事务失效
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
             return proxy.createVoucherOrder(voucherId);
         }
@@ -91,4 +95,53 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         save(voucherOrder);
         return Result.ok(orderId);
     }
+
+    /**
+     * 解决了超卖，但是存在一人一单的问题！
+    @Override
+    public Result seckillVoucher(Long voucherId) {
+        // 1. 查询优惠券
+        SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
+        LocalDateTime nowTime = LocalDateTime.now();
+
+        // 2. 判断秒杀是否开始
+        if (nowTime.isBefore(voucher.getBeginTime())) {
+            return Result.fail("活动未开始！");
+        }
+
+        // 3. 判断秒杀是否结束
+        if (nowTime.isAfter(voucher.getEndTime())) {
+            return Result.fail("活动已结束！");
+        }
+
+        // 4. 判断库存
+        if (voucher.getStock() < 1) {
+            return Result.fail("已买完！");
+        }
+
+        // 5. 减库存
+        boolean success = seckillVoucherService.update()
+                .setSql("stock = stock - 1")
+                .eq("voucher_id", voucherId).gt("stock", 0)  // CAS方案（乐观锁）！
+                .update();
+
+        if (!success) {
+            return Result.fail("库存不足");
+        }
+
+        // 6. 创建订单
+        VoucherOrder voucherOrder = new VoucherOrder();
+
+        // 6.1 订单id
+        long orderId = redisIdWorker.nextId("order");
+        voucherOrder.setId(orderId);
+        // 6.2 用户id
+        Long userId = UserHolder.getUser().getId();
+        voucherOrder.setUserId(userId);
+        // 6.3代金券id
+        voucherOrder.setVoucherId(voucherId);
+        save(voucherOrder);
+        return Result.ok(orderId);
+    }
+     */
 }
