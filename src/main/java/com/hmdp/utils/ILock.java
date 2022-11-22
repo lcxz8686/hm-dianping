@@ -1,5 +1,8 @@
 package com.hmdp.utils;
 
+/**
+ * redis的分布式锁
+ */
 public interface ILock {
 
     /**
